@@ -43,7 +43,6 @@ shinyUI(
       # Instructions for using this app
       h2("Instructions"),
       p("Coming soon to an App near you!!!!!!!")
-      #img(src='Harmelin_Media_Logo.png', height="80%", width="80%", align = "center")
       ),
     # The main panel where all the shit happens
     mainPanel(
