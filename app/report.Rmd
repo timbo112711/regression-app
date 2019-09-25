@@ -1,28 +1,351 @@
 ---
-title: "report.Rmd"
-output: html_document
+title: "Regression Analysis"
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r, comment='', echo=FALSE, results='asis'}
+cat(input$name)
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+## A brief veiw of your data
+```{r, comment='', echo=FALSE, results='asis'}
+knitr::kable(head(dataset()), floating.environment="sidewaystable")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+## Summary Statistics
+```{r, comment='', echo=FALSE, results='asis'}
+summary <- summary(cbind(dataset()[input$var1], dataset()[input$var2]))
+knitr::kable(summary, floating.environment="sidewaystable")
+```
+
+```{r, comment='', echo=FALSE, results='asis'}
+cat(input$text_summary)
+```
+
+## Independent Variable Distributions
+```{r, fig.width=14, fig.height=12, message = FALSE, warnings = FALSE, echo=FALSE}
+histo_plot <- function(melted_df) {
+  ggplot(melted_df,
+         aes(x=value)) +
+    geom_histogram(
+      bins=10,
+      col='black',
+      fill='darkgreen',
+      alpha=0.5) + 
+    facet_wrap(
+      ~variable,
+      scales='free_x') +
+    xlab("Observations") +
+    ylab("Frequency") +
+    theme(
+      axis.text.y=element_text(size=13),
+      axis.text.x=element_text(size=13),
+      axis.title.x=element_text(size=18),
+      axis.title.y=element_text(size=18),
+      strip.text=element_text(size=19)
+    )
+}
+if (length(input$var2) == 1) {
+  df <- subset(dataset(), select = input$var2[1])
+  melted_df <- melt(df, na.rm = FALSE)
+  return(histo_plot(melted_df))
+}
+if (length(input$var2) == 2) {
+  df <- subset(dataset(), select = c(input$var2[1], input$var2[2]))
+  melted_df <- melt(df, na.rm = FALSE)
+  return(histo_plot(melted_df))
+}
+if (length(input$var2) == 3) {
+  df <- subset(dataset(), select = c(input$var2[1], input$var2[2], input$var2[3]))
+  melted_df <- melt(df, na.rm = FALSE)
+  return(histo_plot(melted_df))
+} 
+if (length(input$var2) == 4) {
+  df <- subset(dataset(), select = c(input$var2[1], input$var2[2], input$var2[3], input$var2[4]))
+  melted_df <- melt(df, na.rm = FALSE)
+  return(histo_plot(melted_df))
+}
+if (length(input$var2) == 5) {
+  df <- subset(dataset(), select = c(input$var2[1], input$var2[2], input$var2[3], input$var2[4], input$var2[5]))
+  melted_df <- melt(df, na.rm = FALSE)
+  return(histo_plot(melted_df))
+}
+```
+
+```{r, comment='', echo=FALSE, results='asis'}
+cat(input$text_hist_iv1)
+```
+
+## Dependent Variable Distributions
+```{r, fig.width=15, fig.height=10, message = FALSE, warnings = FALSE, echo=FALSE}
+dependent_histo_plot <- function(melted_df) {
+  ggplot(melted_df,
+         aes(x=value)) +
+    geom_histogram(
+      bins=10,
+      col='black',
+      fill='blue',
+      alpha=0.75) + 
+    facet_wrap(~variable) +
+    xlab("Observations") +
+    ylab("Frequency") +
+    theme(
+      axis.text.y=element_text(size=13),
+      axis.text.x=element_text(size=13),
+      axis.title.x=element_text(size=18),
+      axis.title.y=element_text(size=18),
+      strip.text=element_text(size=19)
+    )
+}
+# Subset data
+df <- subset(dataset(), select=input$var1)
+melted_df <- melt(df, na.rm = FALSE)
+return(dependent_histo_plot(melted_df))
+```
+
+```{r, comment='', echo=FALSE, results='asis'}
+cat(input$text_hist_dv)
+```
+
+## Correlation
+```{r, fig.width=10, fig.height=10, message = FALSE, warnings = FALSE, echo=FALSE}
+# Heat map
+plot_heat_map <- function(melted_cormat) {
+  # Plot
+  ggplot(data=melted_cormat,
+         aes(
+             Var2,
+             Var1,
+             fill=value)) +
+      scale_fill_gradient2(
+        low="tomato",
+        high="limegreen",
+        mid="grey100", 
+        midpoint=0,
+        limit=c(-1,1),
+        space="Lab", 
+        name="Pearson\nCorrelation") +
+      theme(
+        axis.text.x=element_text(
+          angle = 45,
+          vjust = 1,
+          size = 16,
+          hjust = 1),
+        axis.text.y=element_text(size = 16),
+        axis.title.x=element_text(colour="white"),
+        axis.title.y=element_text(colour="white")) +
+      geom_tile(color="white") +
+      geom_text(aes(label = value)) +
+      coord_fixed()
+}
+calculate_correlation <- function(corr_data){
+  corr_data[is.na(corr_data)] <- 0
+  correlation <- round(cor(corr_data), 2)
+  return(correlation)
+}
+# Roll through the inputs
+if (length(input$var2) == 1) {
+  corr_data <- subset(dataset(), select = c(input$var1, input$var2[1]))
+  cor <- calculate_correlation(corr_data)
+  melted_cormat <- melt(cor, na.rm = FALSE)
+  return(plot_heat_map(melted_cormat))
+}
+if (length(input$var2) == 2) {
+  corr_data <- subset(dataset(), select = c(input$var1, input$var2[1],  input$var2[2]))
+  cor <- calculate_correlation(corr_data)
+  melted_cormat <- melt(cor, na.rm = FALSE)
+  return(plot_heat_map(melted_cormat))
+}
+if (length(input$var2) == 3) {
+  corr_data <- subset(dataset(), select = c(input$var1, input$var2[1],  input$var2[2], input$var2[3]))
+  cor <- calculate_correlation(corr_data)
+  melted_cormat <- melt(cor, na.rm = FALSE)
+  return(plot_heat_map(melted_cormat))
+} 
+if (length(input$var2) == 4) {
+  corr_data <- subset(dataset(), select = c(input$var1, input$var2[1],  input$var2[2], input$var2[3], input$var2[4]))
+  cor <- calculate_correlation(corr_data)
+  melted_cormat <- melt(cor, na.rm = FALSE)
+  return(plot_heat_map(melted_cormat))
+}
+if (length(input$var2) == 5) {
+  corr_data <- subset(dataset(), select = c(input$var1, input$var2[1],  input$var2[2], input$var2[3], input$var2[4], input$var2[5]))
+  cor <- calculate_correlation(corr_data)
+  melted_cormat <- melt(cor, na.rm = FALSE)
+  return(plot_heat_map(melted_cormat))
+}
+```
+
+```{r, comment='', echo=FALSE, results='asis'}
+cat(input$text_correlation)
+```
+
+## Regression Model
+
+```{r, message = FALSE, warnings = FALSE, echo=FALSE}
+if (length(input$var2) == 1) {
+  equation1 <- as.formula(paste(input$var1, '~', input$var2))
+  return(HTML("<h4>
+            <strong>Regression Equation:</strong>
+              </h4>", equation1)
+  )
+}
+if (length(input$var2) == 2) {
+  equation2 <- as.formula(paste(input$var1, '~', input$var2[1], '+',  input$var2[2]))
+  return(HTML("<h4>
+            <strong>Regression Equation:</strong>
+              </h4>", equation2)
+  )
+}
+if (length(input$var2) == 3) {
+  equation3 <- as.formula(paste(input$var1, '~', input$var2[1], '+',  input$var2[2], '+',  input$var2[3]))
+  return(HTML("<h4>
+            <strong>Regression Equation:</strong>
+              </h4>", equation3)
+  )
+} 
+if (length(input$var2) == 4) {
+  equation4 <- as.formula(paste(input$var1, '~', input$var2[1], '+',  input$var2[2], '+',  input$var2[3], '+',  input$var2[4]))
+  return(HTML("<h4>
+            <strong>Regression Equation:</strong>
+              </h4>", equation4)
+  )
+}
+if (length(input$var2) == 5) {
+  equation5 <- as.formula(paste(input$var1, '~', input$var2[1], '+',  input$var2[2], '+',  input$var2[3], '+',  input$var2[4], '+',  input$var2[5]))
+  return(HTML("<h4>
+            <strong>Regression Equation:</strong>
+              </h4>", equation5)
+  )
+}
+```
+
+
+##### Model Output
+
+```{r, results = "asis", message = FALSE, warnings = FALSE, echo=FALSE}
+# Regression formula
+regFormula <- reactive({
+  if (length(input$var2) == 1) {
+    equation1 <- as.formula(paste(input$var1, '~', input$var2))
+    return(equation1)
+  }
+  else if (length(input$var2) == 2) {
+    equation2 <- as.formula(paste(input$var1, '~', input$var2[1], '+',  input$var2[2]))
+    return(equation2)
+  }
+  else if (length(input$var2) == 3) {
+    equation3 <- as.formula(paste(input$var1, '~', input$var2[1], '+',  input$var2[2], '+',  input$var2[3]))
+    return(equation3)
+  } 
+  else if (length(input$var2) == 4) {
+    equation4 <- as.formula(paste(input$var1, '~', input$var2[1], '+',  input$var2[2], '+',  input$var2[3], '+',  input$var2[4]))
+    return(equation4)
+  }
+  else if (length(input$var2) == 5) {
+    equation5 <- as.formula(paste(input$var1, '~', input$var2[1], '+',  input$var2[2], '+',  input$var2[3], '+',  input$var2[4], '+',  input$var2[5]))
+    return(equation5)
+  }
+})
+
+# Model
+model <- reactive({
+  regression_model <- lm(regFormula(), data=dataset())
+  return(regression_model)
+})
+
+report_regression <- function(model, ...){
+  if(knitr::is_html_output()){
+    require(texreg)
+    htmlreg(model, custom.note="%stars. htmlreg", ...)
+  } else if(knitr::is_latex_output()){
+    require(stargazer)
+    stargazer(model, notes="stargazer html", ...)
+  } else {
+    summary(model)
+   #print("This only works with latex and html output") 
+  }
+}
+
+report_regression(model())
+```
+
+##### Analysis of Variance
+
+```{r, comment='', echo=FALSE, results='asis'}
+anova <- anova(model())
+knitr::kable(anova, floating.environment="sidewaystable")
+```
+
+##### Confidence Intervals
+
+```{r, comment='', echo=FALSE, results='asis'}
+conf_intervals <- confint(model(), level=0.90)
+knitr::kable(conf_intervals, floating.environment="sidewaystable")
+```
+
+##### Analysis of Covariance
+
+```{r, comment='', echo=FALSE, results='asis'}
+covar <- vcov(model())
+knitr::kable(covar, floating.environment="sidewaystable")
+```
+
+```{r, comment='', echo=FALSE, results='asis'}
+cat(input$text_model)
+```
+
+##### Residuals
+```{r, fig.width=22, fig.height=22, results="markup", echo=FALSE}
+opar <- par(
+  mfrow = c(2,2),
+  oma = c(0, 0, 1.1, 0)
+  )
+plot(model(), 
+     las = 1,
+     cex.lab=1.5,
+     cex.axis=1.5,
+     cex.main=3,
+     cex.sub=1.5
+     )
+par(opar)
+```
+
+```{r, fig.width=15, fig.height=10, echo=FALSE}
+residual_histo_plot <- function(model_residuals) {
+  hist(
+    model()$residuals,
+    main="Residuals Distribution",
+    xlab='Residuals',
+    col='orange'
+    )
+}
+# Roll through the inputs
+if (length(input$var2) == 1) {
+  model_residuals <- model()$residuals
+  return(residual_histo_plot(model_residuals))
+}
+if (length(input$var2) == 2) {
+  model_residuals <- model()$residuals
+  return(residual_histo_plot(model_residuals))
+}
+if (length(input$var2) == 3) {
+  model_residuals <- model()$residuals
+  return(residual_histo_plot(model_residuals))
+} 
+if (length(input$var2) == 4) {
+  model_residuals <- model()$residuals
+  return(residual_histo_plot(model_residuals))
+}
+if (length(input$var2) == 5) {
+  model_residuals <- model()$residuals
+  return(residual_histo_plot(model_residuals))
+}
+```
+
+```{r, comment='', echo=FALSE, results='asis'}
+cat(input$text_residuals)
+```
